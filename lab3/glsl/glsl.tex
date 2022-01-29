@@ -1,0 +1,314 @@
+\documentclass[12pt]{article}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{.5em}
+
+\newcommand{\ch}[2]{#2}
+\usepackage{framed}
+\newcounter{problem}
+\newcounter{problempart}[problem]
+\newcounter{solutionpart}[problem]
+\newenvironment{problem}{\stepcounter{problem}\noindent{\bf\arabic{problem}.}}{\setcounter{problempart}{0}\setcounter{solutionpart}{0}}
+\newenvironment{solution}{\vspace{2em}\textcolor{green!50!black}\bgroup}{\egroup\ch{\vspace{2em}}{\vspace{8em}}}
+\newcommand{\qpart}{\stepcounter{problempart}${}$\\\noindent{(\alph{problempart})} }
+\newcommand{\spart}{\stepcounter{solutionpart}${}$\\\noindent{(\alph{solutionpart})} }
+\newcommand{\TODO}{\textcolor{red}{$\blacksquare$}}
+\newcommand{\SOL}[1]{\textcolor{green!50!black}{#1}}
+
+\usepackage{hyperref}
+\usepackage{fullpage}
+\usepackage{amsmath,mathabx,MnSymbol}
+\usepackage{color,tikz}
+\usepackage{pstricks}
+\usepackage{pst-plot,pst-node}
+\usepackage{footnote,enumitem}
+\usepackage{longtable}
+\newcommand{\mx}[1]{\begin{pmatrix}#1\end{pmatrix}}
+\definecolor{dkgreen}{rgb}{0,.5,0}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\newcommand{\uu}{\mathbf{u}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cc}{\mathbf{c}}
+\newcommand{\ww}{\mathbf{w}}
+\newcommand{\xx}{\mathbf{x}}
+\newcommand{\zz}{\mathbf{z}}
+\newcommand{\ee}{\mathbf{e}}
+\newcommand{\pp}{\mathbf{p}}
+\newcommand{\qq}{\mathbf{q}}
+\renewcommand{\AA}{\mathbf{A}}
+\newcommand{\BB}{\mathbf{B}}
+\newcommand{\nn}{\mathbf{n}}
+\newcommand{\gp}[1]{\left(#1\right)}
+
+\newcommand{\TODOL}[1]{\textcolor{red}{\underline{\hspace{#1 cm}}}}
+
+\usepackage{listings}
+
+\lstset{
+  language=C++,
+  showstringspaces=false,
+  identifierstyle=\color{magenta},
+  basicstyle=\color{magenta},
+  keywordstyle=\color{blue},
+  identifierstyle=\color{black},
+  commentstyle=\color{green},
+  stringstyle=\color{red}
+}
+
+\begin{document}
+
+\title{CS130 - LAB - Introduction to OpenGL}
+\date{}
+\author{Name: \TODOL7\qquad\qquad SID: \TODOL4}
+\maketitle
+\begin{center}
+\end{center}
+
+\section*{Introduction}
+
+Open Graphics Library (OpenGL) is a cross-platform API for fast rendering of 2D
+and 3D graphics. OpenGL typically runs on a graphics processing unit (GPU) and
+it is optimized to render multiple images per second. For this reason, OpenGL is
+often used in game engines and other applications that require interactivity
+with the user.
+
+The goal of this lab is to get you started with OpenGL by implementing Phong's
+illumination model into special OpenGL programs called shaders.
+
+The process is summarized as follows:
+
+\begin{itemize}
+\item An OpenGL program is written in C/C++ and consists of setting up the scene
+  (camera position, objects, lights, among others).
+\item The OpenGL program is also responsible for reading a text file with shader
+  code, compiling it and sending it to the GPU for execution.
+\item The language used in the shader program is very similar to C and is called
+  OpenGL shader language (GLSL)
+\item The shader typically runs on the GPU and the shader determines the
+  position and color of vertices. Vertices are the points that constitute
+  geometry. For instance, a cube has 8 vertices.
+\item Here, we care about two types of shaders: vertex and fragment.
+\item The vertex shader receives vertices and applies transformations to these
+  vertices (scale, translation, rotation, among others).
+\item The fragment shader receives fragments and determines the color of that
+  fragment. Fragments are transformed vertices outputted by the vertex shader
+  after rasterization.
+\end{itemize}
+
+The left diagram below depicts the process of loading the vertex and fragment
+shaders in the OpenGL C/C++ code. The right diagram depicts the vertex and
+fragment shaders.  Taken from \href{http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/pipeline-overview/}{http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/pipeline-overview/}.
+
+\includegraphics[width=.5\textwidth]{images/gpu-diagram.png}%
+\includegraphics[width=.5\textwidth]{images/gpu-flow.png}
+
+1. Consider the OpenGL code diagram depicted above. Describe briefly with your
+own words each one of the following functions. Look at the OpenGL documentation
+for reference. \\
+Link: \href{https://www.khronos.org/registry/OpenGL-Refpages/gl4}{https://www.khronos.org/registry/OpenGL-Refpages/gl4/}
+
+\texttt{glCreateShader}\\
+input: \TODOL6\\
+output: \TODOL6\\*[1em]
+\texttt{glShaderSource}\\
+input: \TODOL6\\*[1em]
+\texttt{glCompileShader}\\
+input: \TODOL6\\*[1em]
+\texttt{glCreateProgram}\\
+output: \TODOL6\\*[1em]
+\texttt{glAttachShader}\\
+input: \TODOL6\\*[1em]
+\texttt{glLinkProgram}\\
+input: \TODOL6\\*[1em]
+\texttt{glUseProgram}\\
+input: \TODOL6\\*[1em]
+
+2. Read the comments and order the lines of code in correct order for loading
+shaders.  Fill in the blanks afterwards. Use the variable names found in the lines of code.
+
+\begin{enumerate}[label=\Alph*.]
+\item glCompileShader(\TODOL2); // compile fragment shader
+\item glAttachShader(\TODOL2, \TODOL2); // attach vertex shader to program
+\item GLuint vertex\_id = glCreateShader(\TODOL2); // create vertex shader
+\item glCompileShader(\TODOL2); // compile vertex shader
+\item glAttachShader(\TODOL2, fragment\_id); // attach program shader to program
+\item glShaderSource(\TODOL2, 1, \&vertex\_shader\_file, NULL); // source vertex shader
+\item glLinkProgram(\TODOL2); // link program
+\item GLuint fragment\_id=glCreateShader(\TODOL2); // create fragment shader
+\item glShaderSource(\TODOL2, 1, \&fragment\_shader\_file, NULL); // source fragment shader
+\item GLuint program = glCreateProgram();
+\end{enumerate}
+Ordering:\TODOL6
+
+\begin{lstlisting}
+// vertex shader example
+void main()
+{
+  gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
+  gl_FrontColor = vec4(0, 1, 0, 1);
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+// fragment shader example
+vec4 light_color = vec4(1, 1, 0, 1);
+void main()
+{
+  gl_FragColor = light_color*gl_FrontColor;
+}
+\end{lstlisting}
+
+This vertex shader receives a \texttt{vec4 gl\_Vertex} and returns a
+\texttt{vec4 gl\_Position}. \texttt{gl\_ProjectionMatrix} and
+\texttt{gl\_ModelViewMatrix} are transformation matrices given by OpenGL.
+
+The fragment shader receives \texttt{gl\_FrontColor} from the vertex shader and
+returns the color of the fragment as \texttt{gl\_FragColor}.
+
+3.1. What is the output color of the fragment shader?
+
+\texttt{gl\_FragColor = (\TODOL1,\TODOL1,\TODOL1,\TODOL1)}
+
+3.2. Consider an object with color green represented by the RGB color vector (0,
+1, 0) and a blue light source with color (0, 0, 1). If we illuminate the object
+with the light, what is the output color? (Hint: Consider the fragment shader code above.)
+
+\TODO
+
+\section*{Part 2: Phong Lighting Model Review}
+
+Write the equations for the the Phong model components. Draw any missing vectors
+in the figure below.
+
+Ambient: \TODOL6\\
+Diffuse: \TODOL6\\
+Specular: \TODOL6
+
+\includegraphics[width=8cm]{images/light-rays.png}
+
+In the figure below, vector $r$ is the reflection of vector $l$ from the
+surface, and $n$ vector is the unit-length normal of the surface.
+
+\includegraphics[width=8cm]{images/reflection-direction.jpg}
+
+Write the reflection vector $r$ in terms of $n$ and $l$, following the steps
+below:
+\begin{enumerate}
+\item Formulate vector $p$, which is the projection of $l$ on $n$, in terms of
+  $l$ and $n$. $p= \TODOL6$.
+\item Formulate vector $d$, in terms of $l$ and $p$.  $d= \TODOL6$.
+\item Write vector $r$ in terms of $d$, $p$ and $l$ (you do not have to use all
+  of them). $r = \TODOL6$.
+\item Substitute $p$ and $d$, with your results from steps 1 and 2, and write
+  $r$ in terms of $l$ and $n$ only.  $r=\TODOL6$.
+\end{enumerate}
+
+In order to write Phong's model in your shader, you can use (these structures and variables are already defined elsewhere in the program):
+
+\begin{lstlisting}
+struct gl_LightSourceParameters
+{
+  vec4 ambient;
+  vec4 diffuse;
+  vec4 specular;
+  vec4 position;
+};
+uniform gl_LightSourceParameters
+gl_LightSource[gl_MaxLights]; // accessible variable
+struct gl_LightModelParameters
+{
+  vec4 ambient;
+};
+uniform gl_LightModelParameters gl_LightModel; // accessible variable
+struct gl_MaterialParameters
+{
+  vec4 ambient;
+  vec4 diffuse;
+  vec4 specular;
+  float shininess; // this is the exponent of the specular component
+};
+uniform gl_MaterialParameters gl_FrontMaterial; // accessible variable
+\end{lstlisting}
+
+You may also use the following functions: \texttt{max($\cdot$,$\cdot$); dot($\cdot$,$\cdot$);
+normalize($\cdot$);}
+
+You can assume the camera position is at the origin, i.e., at coordinates (0, 0,
+0).
+
+\section*{Part 3: Notes on Assignment 1 - Checkpoint 2}
+
+If you implemented plane intersection, then you have test 04 working.  The next
+steps are:
+
+\begin{enumerate}
+\item Phong shader
+\item Shadows
+\end{enumerate}
+
+Starting with the Phong shader.  (Implement \texttt{Shade\_Surface} in
+\texttt{phong\_shader.cpp}). Recall Phong shader consists of 3 components:
+ambient, diffuse, specular. You will need to calculate each component and add
+them all to the color that is returned.
+
+\paragraph*{Ambient.} Combination of three variables (you have access to all of
+them in \texttt{Shade\_Surface})
+\begin{enumerate}
+\item \texttt{world.ambient\_color}
+\item \texttt{world.ambient\_intensity}
+\item \texttt{color\_ambient}
+\end{enumerate}
+
+\paragraph*{Diffuse.} Is proportional to the cosine of the angle between the
+normal ($n$) and the vector from the intersection point to the light source
+($l$). This term is the intensity of the diffuse component.
+\begin{itemize}
+\item The intersection point is calculated as the point in the ray with the
+  earliest hit $t$. You can get any point on a ray using the function
+  \texttt{ray.Point(t)}.
+\item You may need to calculate the intersection point in your
+  \texttt{Cast\_Ray} before passing it to the shader.
+\item Notice the normal should be pointing to outside of your object. If the
+  nearest point is exiting the object, you may need to invert the normal so it
+  is facing the right direction.
+\item Normalize the vectors when calculating the cosine using dot product.
+\item Check if the light source is behind the intersection point on the
+  surface. In this case, the diffuse intensity is zero. You can check for this
+  by taking $\max(l \cdot n, 0)$.
+\item You have access to \texttt{color\_diffuse} in your Phong shader. This
+  should be combined with the diffuse intensity.
+\item You will also need to compute the color of the light source and combine it
+  in your diffuse component. In particular, the intensity of the light should
+  decay proportional to the square distance between the intersection point and
+  the light source.
+\item You can get the light color at the proper intensity by calling the function
+  \texttt{Emitted\_Light} passing the vector between the light source and the intersection point.
+\end{itemize}
+
+\paragraph*{Specular.} Proportional to the cosine of the angle between the
+reflected direction and the vector from the intersection point to the camera
+position ($c$).
+\begin{itemize}
+\item You can calculate the reflected direction using $r=(2*(l \cdot n)
+  n-l)$. Make sure $l$ and $r$ are normalized.
+\item The specular intensity is $\max(r \cdot c,0)^\alpha$, where $\alpha$ is
+  given to you as the \texttt{specular\_power} variable.
+\item The final color is calculated similarly to the diffuse component by using
+  the \texttt{light\_color} with decay proportional to the square of the
+  distance to the light source.
+\end{itemize}
+
+\paragraph*{Shadows.}
+\begin{itemize}
+\item In your Phong shader, check if shadows should be calculated by using the
+  variable \texttt{world.enable\_shadows}.
+\item If \texttt{world.enable\_shadows} is true, then you should check if there
+  is an object between your intersection point and the light source (You can use
+  \texttt{Closest\_Intersection} for this).
+\item If there is an object blocking all your light sources, then you should
+  return only the ambient light component.
+\end{itemize}
+
+\end{document}
