@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <limits>
+#include "plane.h"
 
 // Consider a triangle to intersect a ray if the ray intersects the plane of the
 // triangle with barycentric weights in [-weight_tolerance, 1+weight_tolerance]
@@ -42,16 +43,38 @@ void Mesh::Read_Obj(const char* file)
 // Check for an intersection against the ray.  See the base class for details.
 Hit Mesh::Intersection(const Ray& ray, int part) const
 {
-    TODO;
-    return {};
+        Hit p = {this, 0, part};
+	double tmpdist = 0;
+	bool first_intersect = true;
+	for(unsigned i = 0; i<triangles.size();i++){
+		if(Intersect_Triangle(ray, i, tmpdist)){
+			if(first_intersect){
+				first_intersect = false;
+				p.dist = tmpdist;
+				p.part = i;
+			}
+			else if(tmpdist < p.dist){
+				p.dist = tmpdist;
+				p.part = i;
+			}
+		}
+	}
+	return p;
 }
 
 // Compute the normal direction for the triangle with index part.
 vec3 Mesh::Normal(const vec3& point, int part) const
 {
     assert(part>=0);
-    TODO;
-    return vec3();
+    ivec3 points = triangles[part];
+    vec3 A = vertices[points[0]];
+    vec3 B = vertices[points[1]];
+    vec3 C = vertices[points[2]];
+
+    vec3 AB = B - A;
+    vec3 AC = C - A;
+    vec3 normal = cross(AB, AC).normalized();
+    return normal;
 }
 
 // This is a helper routine whose purpose is to simplify the implementation
@@ -68,7 +91,28 @@ vec3 Mesh::Normal(const vec3& point, int part) const
 // two triangles.
 bool Mesh::Intersect_Triangle(const Ray& ray, int tri, double& dist) const
 {
-    TODO;
+    vec3 A = vertices[triangles[tri][0]];
+    vec3 B = vertices[triangles[tri][1]];
+    vec3 C = vertices[triangles[tri][2]];
+    Plane p(A, Normal(A, tri));
+    Hit h = p.Intersection(ray, tri);
+    
+    if(h.object == NULL){
+    	return false;
+    }
+
+    vec3 P = ray.Point(h.dist); 	//intersection point
+    double alpha, beta, gamma;
+    double ABC = cross(B-A,C-A).magnitude();
+    if(ABC == 0){return false;}
+    alpha = dot(cross(B-P, C-P), Normal(A,tri))/ABC;
+    beta = dot(cross(P-A, C-A), Normal(A,tri))/ABC;
+    gamma = 1.0 - alpha - beta;
+
+    if(alpha > -weight_tol && beta > -weight_tol && gamma > -weight_tol && h.dist > small_t){
+	    dist = h.dist;
+	    return true;
+    }
     return false;
 }
 
