@@ -22,20 +22,27 @@ Shade_Surface(const Ray& ray,const vec3& intersection_point,
     //calculating difuse and specular components ==========================
     
     for(unsigned int i = 0; i < world.lights.size(); i++){
-   	vec3 l = world.lights.at(i)->position - intersection_point;		
-	l = l.normalized();			// l is normalized light direction
+   	vec3 light = world.lights.at(i)->position - intersection_point;		
+	vec3 l = light.normalized();		// l is normalized light direction
 	vec3 n = normal.normalized();		// n is normalized normal vector at intersection point
-	
-	//diffuse component
-	vec3 Ld = world.lights.at(i)->Emitted_Light(world.lights.at(i)->position - intersection_point);
-	diffuse = Ld * color_diffuse * std::max(dot(n,l),0.0);
-	//=======================
-	//specular component
-	vec3 r = 2*(dot(n,l))*n - l; 		    // r is reflection of light ray about the normal at intersection point
-	vec3 v = (ray.direction).normalized() * -1; // negative of the view ray direction at the object
-	specular = Ld * color_specular * pow(std::max(dot(r,v),0.0), specular_power);  
+	Ray shadow(intersection_point, l);
+	Hit shadow_obj = world.Closest_Intersection(shadow);
 
-	color = color + diffuse + specular;
+	if(shadow_obj.object != NULL && shadow_obj.dist < light.magnitude() && world.enable_shadows && shadow_obj.dist > small_t){
+		color = color;
+	}	
+	else if(shadow_obj.object == NULL || !world.enable_shadows || shadow_obj.dist > light.magnitude() || shadow_obj.dist <= small_t){
+		//diffuse component
+		vec3 Ld = world.lights.at(i)->Emitted_Light(world.lights.at(i)->position - intersection_point);
+		diffuse = Ld * color_diffuse * std::max(dot(n,l),0.0);
+		//=======================
+		//specular component
+		vec3 r = 2*(dot(n,l))*n - l; 		    // r is reflection of light ray about the normal at intersection point
+		vec3 v = (ray.direction).normalized() * -1; // negative of the view ray direction at the object
+		specular = Ld * color_specular * pow(std::max(dot(r,v),0.0), specular_power);  
+
+		color = color + diffuse + specular;
+	}
     }
     return color;
 }
