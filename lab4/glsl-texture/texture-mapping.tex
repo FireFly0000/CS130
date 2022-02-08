@@ -1,0 +1,276 @@
+\documentclass[12pt]{article}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{.5em}
+
+\usepackage{framed}
+\newcounter{problem}
+\newcounter{problempart}[problem]
+\newcounter{solutionpart}[problem]
+\newenvironment{problem}{\stepcounter{problem}\noindent{\bf\arabic{problem}.}}{\setcounter{problempart}{0}\setcounter{solutionpart}{0}}
+\newenvironment{solution}{\par\textcolor{green!50!black}\bgroup}{\egroup\par}
+\newcommand{\qpart}{\stepcounter{problempart}${}$\\\noindent{(\alph{problempart})} }
+\newcommand{\spart}{\stepcounter{solutionpart}${}$\\\noindent{(\alph{solutionpart})} }
+\newcommand{\TODO}{\textcolor{red}{$\blacksquare$}}
+\newcommand{\SOL}[1]{\textcolor{green!50!black}{#1}}
+
+\usepackage{hyperref}
+\usepackage{fullpage}
+\usepackage{amsmath,mathabx,MnSymbol}
+\usepackage{color,tikz}
+\usepackage{pstricks}
+\usepackage{pst-plot,pst-node}
+\usepackage{footnote,enumitem}
+\usepackage{longtable}
+\newcommand{\mx}[1]{\begin{pmatrix}#1\end{pmatrix}}
+\definecolor{dkgreen}{rgb}{0,.5,0}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\newcommand{\uu}{\mathbf{u}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cc}{\mathbf{c}}
+\newcommand{\ww}{\mathbf{w}}
+\newcommand{\xx}{\mathbf{x}}
+\newcommand{\zz}{\mathbf{z}}
+\newcommand{\ee}{\mathbf{e}}
+\newcommand{\pp}{\mathbf{p}}
+\newcommand{\qq}{\mathbf{q}}
+\renewcommand{\AA}{\mathbf{A}}
+\newcommand{\BB}{\mathbf{B}}
+\newcommand{\nn}{\mathbf{n}}
+\newcommand{\gp}[1]{\left(#1\right)}
+
+\newcommand{\TODOL}[1]{\textcolor{red}{\underline{\hspace{#1 cm}}}}
+
+\usepackage{listings}
+
+\lstset{
+  language=C++,
+  showstringspaces=false,
+  identifierstyle=\color{magenta},
+  basicstyle=\color{magenta},
+  keywordstyle=\color{blue},
+  identifierstyle=\color{black},
+  commentstyle=\color{olive},
+  stringstyle=\color{red}
+}
+
+\begin{document}
+
+\title{CS130 - LAB - Texture Mapping}
+\date{}
+\author{Name: \TODOL7\qquad\qquad SID: \TODOL4}
+\maketitle
+\begin{center}
+\end{center}
+
+\section*{Introduction}
+
+Texture mapping in GLSL consists of 3 parts
+\begin{enumerate}
+\item Uploading a texture: Handled in the OpenGL program (C/C++) part. In a typical
+  OpenGL program, textures are read from an image file (.png,.  tga etc.) and
+  loaded in to OpenGL. The parameters of the texture (such as interpolation
+  methods) are also set in the program.
+\item Computing the texture coordinate of a vertex: In GLSL, the texture
+  coordinate \texttt{glTexCoord[i]} for a texture $i$ and a vertex is determined in the
+  vertex shader. This is the coordinate of the vertices' corresponding texture
+  positions in the image data of texture $i$, where $i$ is the index of a texture
+  (in case of multiple textures, $i = 0$ for a single texture).
+\item Getting the texture color for a fragment: The texture coordinate,
+  \texttt{glTexCoord[i]}, of texture $i$ is readily interpolated to the fragment
+  location by OpenGL. A lookup function such as texture2D is used to get the
+  color from the texture.
+\end{enumerate}
+
+\section*{Part I: Uploading a Texture}
+
+Read the tutorials about uploading a texture file in these links and answer the
+questions.
+
+\begin{enumerate}
+\item \href{https://www.gamedev.net/articles/programming/graphics/opengl-texture-mapping-an-introduction-r947/}{https://www.gamedev.net/articles/programming/graphics/opengl-texture-mapping-an-introduction-r947}
+\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-5-a-textured-cube/\#how-to-load-texture-with-glfw}{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-5-a-textured-cube/\#how-to-load-texture-with-glfw}
+  (Until section ``How to load texture with GLFW'')
+\end{enumerate}
+
+Question 1: Describe briefly with your own words each one of the following
+functions. Look at the OpenGL documentation for reference.  Link:
+\href{https://www.khronos.org/registry/OpenGL-Refpages/gl4/}{https://www.khronos.org/registry/OpenGL-Refpages/gl4/}
+
+Google: ``OpenGL 4 references''
+
+\texttt{glGenTextures}:\\[1em]
+Inputs: \TODOL6\\[1em]
+\texttt{glBindTexture}:\\[1em]
+Inputs: \TODOL6\\[1em]
+\texttt{glTexParameter}:\\[1em]
+Inputs: \TODOL6\\[1em]
+\texttt{glTexImage2D}:\\[1em]
+Inputs: \TODOL6\\
+
+Question 2: Answer the question below, briefly. Hint: see \texttt{glTexParameter}'s
+reference page.
+
+\begin{enumerate}
+\item What do minifying and magnifying mean?\\[1em] \TODO
+\item What parameter name should be used in \texttt{glTexParameter} function in
+  order to specify minifying function?\\[1em] \TODO
+\item What parameter name should be used in \texttt{glTexParameter} function in
+  order to specify magnifying function?\\[1em] \TODO
+\item What are the possible minifying and magnifying functions defined by
+  OpenGL?\\[1em]
+  Answer: \texttt{GL\_LINEAR}, \TODOL6
+\end{enumerate}
+\pagebreak
+Question 3: Read the comments and fill out the code accordingly. 
+
+\begin{lstlisting}
+// =======================================================================
+// Inputs: 
+//    data: a variable that stores the image data in ``unsigned char*''
+// GL_UNSIGNED_BYTE type
+//    height: an integer storing the height of the image data        
+//    width: an integer storing the height of the image data
+// Description: 
+//    A piece of code that uploads the image ``data'' to OpenGL
+//
+// =======================================================================
+GLuint texture_id = 0;
+// generate an OpenGL texture and store in texture_id variable
+
+
+// set/``bind'' the active texture to texture_id
+
+
+// Set the magnifying filter parameter of the active texture to linear 
+
+
+// Set the minifying filter parameter of the active texture to linear 
+
+
+// Set the wrap parameter of "S" coordinate to GL_REPEAT
+
+
+// Set the wrap parameter of "T" coordinate to GL_REPEAT
+
+
+// Upload the texture data, stored in variable ``data'' in RGBA format 
+
+
+\end{lstlisting}
+
+\pagebreak
+
+\section*{Part II: Shading with Textures in GLSL}
+
+Read the tutorials below and answer the following questions
+
+\href{https://www.opengl.org/sdk/docs/tutorials/ClockworkCoders/texturing.php}{https://www.opengl.org/sdk/docs/tutorials/ClockworkCoders/texturing.php}
+
+Introduction section only
+
+\href{http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/simple-texture/}{http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/simple-texture/}
+
+1. Fill out the blanks in the vertex and fragment shaders below to compute the
+\texttt{gl\_TexCoord[0]} using \texttt{gl\_TextureMatrix[0]} and
+\texttt{glMultiTexCoord}.
+
+\texttt{vertex.glsl}:
+
+
+\begin{lstlisting}
+varying vec3 N;
+varying vec4 position;
+
+// Create a uniform 2D texture sampler variable, with name "tex";
+
+
+
+void main()
+{
+    // compute gl_TexCoord[0] using gl_TextureMatrix[0] and glMultiTexCoord
+    gl_TexCoord[0] = (                                       );
+    N = gl_NormalMatrix * gl_Normal;
+    gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
+    position = gl_ModelViewMatrix * gl_Vertex;
+}
+\end{lstlisting}
+
+\texttt{fragment.glsl}:
+
+\begin{lstlisting}
+// create a uniform 2D texture sampler variable, with name "tex", so that 
+// it will be forwarded from the vertex shader
+
+
+ 
+
+void main()
+{
+    // get the texture color from "tex", using a texture lookup function 
+    // and the s,t coordinates of gl_TexCoord[0].
+    
+
+    vec4 tex_color = (                         );
+
+    // set gl_FragColor to tex_color
+    gl_FragColor = tex_color;
+}
+\end{lstlisting}
+
+\section*{Part III: Texture mapping coding practice}
+
+In this part of the lab you will be practicing texture mapping with GLSL with a skeleton
+code.
+
+The skeleton code has texture files (\texttt{.tga} images) \texttt{monkey.tga}
+and \texttt{monkey\_occlusion.tga}, as well as the base code for creating an
+OpenGL window, loading a monkey model and drawing it.  Follow the steps below
+and implement texture mapping in the skeleton.
+
+\paragraph*{Step 0.} Download the skeleton code from the lab webpage to your environment of choice (the ti-05 server works best for this) and unzip/untar it. Open the image files and observe their
+content.
+
+\paragraph*{Step 1.} Uploading \texttt{monkey.tga} to OpenGL:
+
+\begin{itemize}
+\item Locate the TODO section towards the end of the \texttt{loadTarga} function
+  in \texttt{application.cpp}
+\item Use the code in the answer to Part I Question 3, to upload ``data'' to
+  OpenGL.
+\end{itemize}
+
+Note 1: the code at the beginning of the function reads the image file in
+``filename'' to the ``data'' variable.
+
+Note 2: \texttt{monkey.tga} is in RGBA format, and the data is a pointer to
+\texttt{UNSIGNED\_BYTE} array.
+
+\paragraph*{Step 2.} Computing texture coordinates
+
+\begin{itemize}
+\item Locate \texttt{vertex.glsl} and compare the code with the vertex shader
+  code in Part II Question 2.
+\item Note that the code that computes the texture coordinate of the vertex is
+  already computed, and so you have nothing to do and may go to step 3.
+\end{itemize}
+
+\paragraph*{Step 3.} Computing the color of the fragment using texture color. 
+
+\begin{itemize}
+\item Locate fragment.glsl and compare the code with the phong shader you
+  implemented in a previous lab. This is a phong shader without a
+  specular component.
+\item Now compute the texture color just like in the fragment shader in
+  Part II Question 3 and store it in a \texttt{tex\_color} variable. But, do not
+  assign it to \texttt{gl\_FragColor}.
+\item Here we would like to use the texture color instead of the material
+  color \\
+(\texttt{glFrontMaterial.diffuse.rgb}), while keeping the rest of the
+  computation. 
+\item Rewrite the line that computes the \texttt{gl\_FragColor} to do this.
+\end{itemize}
+
+\end{document}
