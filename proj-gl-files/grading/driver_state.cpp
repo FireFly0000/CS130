@@ -44,15 +44,15 @@ void render(driver_state& state, render_type type)
 	switch(type){
 		case render_type::triangle:{
 			int x = 0;
-			for(int i = 0; i < state.num_triangles/3; i++){
+			for(int i = 0; i < state.num_vertices/3; i++){
 				for(int j = 0; j < 3; j++){
 					temp[j].data = &state.vertex_data[x];
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 					x = x+state.floats_per_vertex;					
 				}
+				rasterize_triangle(state, objects[0], objects[1], objects[2]);
 			}
-			rasterize_triangle(state, objects[0], objects[1], objects[2]);
 			break;
 		}
 		default: {break;}
@@ -83,6 +83,31 @@ void clip_triangle(driver_state& state, const data_geometry& v0,
 void rasterize_triangle(driver_state& state, const data_geometry& v0,
     const data_geometry& v1, const data_geometry& v2)
 {
-    std::cout<<"TODO: implement rasterization"<<std::endl;
+    float x[3];
+    float y[3];
+    
+    x[0] = (v0.gl_Position[0] + 1) * 0.5 * state.image_width;
+    x[1] = (v1.gl_Position[0] + 1) * 0.5 * state.image_width;
+    x[2] = (v2.gl_Position[0] + 1) * 0.5 * state.image_width;
+
+    y[0] = (v0.gl_Position[1] + 1) * 0.5 * state.image_height;	   
+    y[1] = (v1.gl_Position[1] + 1) * 0.5 * state.image_height;
+    y[2] = (v2.gl_Position[1] + 1) * 0.5 * state.image_height;
+
+    float totalArea = (0.5 * ((x[1]*y[2] - x[2]*y[1]) - (x[0]*y[2] - x[2]*y[0]) + (x[0]*y[1] - x[1]*y[0])));
+
+    for(int i = 0; i < state.image_width; i++){
+	for(int j = 0; j < state.image_height; j++){
+	    float alpha = (0.5 * ((x[1]*y[2] - x[2]*y[1]) + (y[1] - y[2])*i + (x[2] - x[1])*j)) / totalArea;
+            float beta = (0.5 * ((x[2]*y[0] - x[0]*y[2]) + (y[2] - y[0])*i + (x[0] - x[2])*j)) / totalArea;
+            float gamma = (0.5 * ((x[0]*y[1] - x[1]*y[0]) + (y[0] - y[1])*i + (x[1] - x[0])*j)) / totalArea;
+            if (alpha >= 0 && beta >= 0 && gamma >= 0){
+                state.image_color[state.image_width * j + i] = make_pixel(255,255,255);
+             }
+        }
+    }
+
+
 }
+
 
