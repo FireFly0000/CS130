@@ -98,9 +98,9 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
 
     for(int i = 0; i < state.image_width; i++){
 	for(int j = 0; j < state.image_height; j++){
-	    float alpha = (0.5 * ((x[1]*y[2] - x[2]*y[1]) + (y[1] - y[2])*i + (x[2] - x[1])*j)) / totalArea;
-            float beta = (0.5 * ((x[2]*y[0] - x[0]*y[2]) + (y[2] - y[0])*i + (x[0] - x[2])*j)) / totalArea;
-            float gamma = (0.5 * ((x[0]*y[1] - x[1]*y[0]) + (y[0] - y[1])*i + (x[1] - x[0])*j)) / totalArea;
+	    float alpha = (0.5 * ((x[1]*y[2] - x[2]*y[1]) + (j*x[2] - i*y[2]) + (i*y[1] - j*x[1]))) / totalArea;
+            float beta = (0.5 * ((i*y[2] - x[2]*j) + (x[2]*y[0] - x[0]*y[2]) + (x[0]*j - y[0]*i))) / totalArea;
+            float gamma = (0.5 * ((x[1]*j - i*y[1]) + (i*y[0] - x[0]*j) + (x[0]*y[1] - x[1]*y[0])))/ totalArea;
             if (alpha >= 0 && beta >= 0 && gamma >= 0){
                 state.image_color[state.image_width * j + i] = make_pixel(255,255,255);
              }
