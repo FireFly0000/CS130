@@ -37,7 +37,27 @@ void initialize_render(driver_state& state, int width, int height)
 //   render_type::strip -    The vertices are to be interpreted as a triangle strip.
 void render(driver_state& state, render_type type)
 {
-    std::cout<<"TODO: implement rendering."<<std::endl;
+	data_geometry objects[3];
+	//const data_geometry* ob_addr[3];
+	data_vertex temp[3];
+
+	switch(type){
+		case render_type::triangle:{
+			int x = 0;
+			for(int i = 0; i < state.num_triangles/3; i++){
+				for(int j = 0; j < 3; j++){
+					temp[j].data = &state.vertex_data[x];
+					objects[j].data = temp[j].data;
+					state.vertex_shader(temp[j], objects[j], state.uniform_data);
+					x = x+state.floats_per_vertex;					
+				}
+			}
+			rasterize_triangle(state, objects[0], objects[1], objects[2]);
+			break;
+		}
+		default: {break;}
+	}
+
 }
 
 
