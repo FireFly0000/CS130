@@ -97,15 +97,26 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
     y[1] = height_half * (v1.gl_Position[1]/v1.gl_Position[3])  + height_half - 0.5;
     y[2] = height_half * (v2.gl_Position[1]/v2.gl_Position[3])  + height_half - 0.5;
 
+    float x_min = std::min(std::min(x[0], x[1]), x[2]);
+    float x_max = std::max(std::max(x[0], x[1]), x[2]);
+    float y_min = std::min(std::min(y[0], y[1]), y[2]);
+    float y_max = std::max(std::max(y[0], y[1]), y[2]);
+    
+   float* data = new float[MAX_FLOATS_PER_VERTEX];
+   data_fragment in;
+   in.data = data;
+   data_output out;
+
     float totalArea = (0.5 * ((x[1]*y[2] - x[2]*y[1]) - (x[0]*y[2] - x[2]*y[0]) + (x[0]*y[1] - x[1]*y[0])));
 
-    for(int i = 0; i < state.image_width; i++){
-	for(int j = 0; j < state.image_height; j++){
+    for(int i = x_min; i < x_max; i++){
+	for(int j = y_min; j < y_max; j++){
 	    float alpha = (0.5 * ((x[1]*y[2] - x[2]*y[1]) + (j*x[2] - i*y[2]) + (i*y[1] - j*x[1]))) / totalArea;
             float beta = (0.5 * ((i*y[2] - x[2]*j) + (x[2]*y[0] - x[0]*y[2]) + (x[0]*j - y[0]*i))) / totalArea;
             float gamma = (0.5 * ((x[1]*j - i*y[1]) + (i*y[0] - x[0]*j) + (x[0]*y[1] - x[1]*y[0])))/ totalArea;
             if (alpha >= 0 && beta >= 0 && gamma >= 0){
-                state.image_color[state.image_width * j + i] = make_pixel(255,255,255);
+		state.fragment_shader(in, out, state.uniform_data);
+                state.image_color[state.image_width * j + i] = make_pixel(out.output_color[0] * 255, out.output_color[1] * 255, out.output_color[2] * 255);
              }
         }
     }
