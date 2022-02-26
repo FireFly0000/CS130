@@ -85,14 +85,17 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
 {
     float x[3];
     float y[3];
-    
-    x[0] = (v0.gl_Position[0] + 1) * 0.5 * state.image_width;
-    x[1] = (v1.gl_Position[0] + 1) * 0.5 * state.image_width;
-    x[2] = (v2.gl_Position[0] + 1) * 0.5 * state.image_width;
 
-    y[0] = (v0.gl_Position[1] + 1) * 0.5 * state.image_height;	   
-    y[1] = (v1.gl_Position[1] + 1) * 0.5 * state.image_height;
-    y[2] = (v2.gl_Position[1] + 1) * 0.5 * state.image_height;
+    float width_half = state.image_width / 2;
+    float height_half = state.image_height / 2;
+    
+    x[0] = width_half * (v0.gl_Position[0]/v0.gl_Position[3])  + width_half - 0.5;
+    x[1] = width_half * (v1.gl_Position[0]/v1.gl_Position[3])  + width_half - 0.5;
+    x[2] = width_half * (v2.gl_Position[0]/v2.gl_Position[3])  + width_half - 0.5;
+
+    y[0] = height_half * (v0.gl_Position[1]/v0.gl_Position[3])  + height_half - 0.5;	   
+    y[1] = height_half * (v1.gl_Position[1]/v1.gl_Position[3])  + height_half - 0.5;
+    y[2] = height_half * (v2.gl_Position[1]/v2.gl_Position[3])  + height_half - 0.5;
 
     float totalArea = (0.5 * ((x[1]*y[2] - x[2]*y[1]) - (x[0]*y[2] - x[2]*y[0]) + (x[0]*y[1] - x[1]*y[0])));
 
