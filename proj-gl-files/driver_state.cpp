@@ -126,21 +126,21 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
             	if(z_depth < state.image_depth[state.image_width * j + i]){
                 	state.image_depth[state.image_width * j + i] = z_depth;
 			for(int k = 0; k < state.floats_per_vertex; k++){
-                        	//float k_gour = 0;
-                        	switch(state.interp_rules[k]){
-                            		case interp_type::flat:{
-                                		in.data[k] = v0.data[k];
-                                		break;
-                            		}
-					default: {break;}
+                        	if(state.interp_rules[k] == interp_type::flat){
+					in.data[k] = v0.data[k];
+				}
+				else if(state.interp_rules[k] == interp_type::noperspective){
+					in.data[k] = alpha * v0.data[k] + beta * v1.data[k] + gamma * v2.data[k];
 				}
 			}
-		}
-		state.fragment_shader(in, out, state.uniform_data);
-                state.image_color[state.image_width * j + i] = make_pixel(out.output_color[0] * 255, out.output_color[1] * 255, out.output_color[2] * 255);
-             }
+		
+			state.fragment_shader(in, out, state.uniform_data);
+                	state.image_color[state.image_width * j + i] = make_pixel(out.output_color[0] * 255, out.output_color[1] * 255, out.output_color[2] * 255);
+                }
+	    }
         }
     }
+    delete data;
 
 }
 
