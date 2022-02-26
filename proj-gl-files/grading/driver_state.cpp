@@ -25,6 +25,7 @@ void initialize_render(driver_state& state, int width, int height)
 
     for(int i = 0; i < width*height; i++){
 	state.image_color[i] = black;
+	state.image_depth[i] = 10;
     }
 }
 
@@ -85,6 +86,7 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
 {
     float x[3];
     float y[3];
+    float z[3];
 
     float width_half = state.image_width / 2;
     float height_half = state.image_height / 2;
@@ -96,6 +98,10 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
     y[0] = height_half * (v0.gl_Position[1]/v0.gl_Position[3])  + height_half - 0.5;	   
     y[1] = height_half * (v1.gl_Position[1]/v1.gl_Position[3])  + height_half - 0.5;
     y[2] = height_half * (v2.gl_Position[1]/v2.gl_Position[3])  + height_half - 0.5;
+
+    z[0] = v0.gl_Position[2]/v0.gl_Position[3];
+    z[1] = v1.gl_Position[2]/v0.gl_Position[3];
+    z[2] = v2.gl_Position[2]/v0.gl_Position[3];
 
     float x_min = std::min(std::min(x[0], x[1]), x[2]);
     float x_max = std::max(std::max(x[0], x[1]), x[2]);
@@ -114,13 +120,27 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
 	    float alpha = (0.5 * ((x[1]*y[2] - x[2]*y[1]) + (j*x[2] - i*y[2]) + (i*y[1] - j*x[1]))) / totalArea;
             float beta = (0.5 * ((i*y[2] - x[2]*j) + (x[2]*y[0] - x[0]*y[2]) + (x[0]*j - y[0]*i))) / totalArea;
             float gamma = (0.5 * ((x[1]*j - i*y[1]) + (i*y[0] - x[0]*j) + (x[0]*y[1] - x[1]*y[0])))/ totalArea;
+	    
             if (alpha >= 0 && beta >= 0 && gamma >= 0){
+		float z_depth = alpha * z[0] + beta * z[1] + gamma * z[2];
+            	if(z_depth < state.image_depth[state.image_width * j + i]){
+                	state.image_depth[state.image_width * j + i] = z_depth;
+			for(int k = 0; k < state.floats_per_vertex; k++){
+                        	//float k_gour = 0;
+                        	switch(state.interp_rules[k]){
+                            		case interp_type::flat:{
+                                		in.data[k] = v0.data[k];
+                                		break;
+                            		}
+					default: {break;}
+				}
+			}
+		}
 		state.fragment_shader(in, out, state.uniform_data);
                 state.image_color[state.image_width * j + i] = make_pixel(out.output_color[0] * 255, out.output_color[1] * 255, out.output_color[2] * 255);
              }
         }
     }
-
 
 }
 
