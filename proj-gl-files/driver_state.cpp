@@ -103,10 +103,10 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
     z[1] = v1.gl_Position[2]/v0.gl_Position[3];
     z[2] = v2.gl_Position[2]/v0.gl_Position[3];
 
-    float x_min = std::min(std::min(x[0], x[1]), x[2]);
-    float x_max = std::max(std::max(x[0], x[1]), x[2]);
-    float y_min = std::min(std::min(y[0], y[1]), y[2]);
-    float y_max = std::max(std::max(y[0], y[1]), y[2]);
+    float x_min = std::max(std::min(std::min(x[0], x[1]), x[2]), float(0.0));
+    float x_max = std::min(std::max(std::max(x[0], x[1]), x[2]), float(state.image_width));
+    float y_min = std::max(std::min(std::min(y[0], y[1]), y[2]), float(0.0));
+    float y_max = std::min(std::max(std::max(y[0], y[1]), y[2]), float(state.image_height));
     
    float* data = new float[MAX_FLOATS_PER_VERTEX];
    data_fragment in;
@@ -126,14 +126,17 @@ void rasterize_triangle(driver_state& state, const data_geometry& v0,
             	if(z_depth < state.image_depth[state.image_width * j + i]){
                 	state.image_depth[state.image_width * j + i] = z_depth;
 			for(int k = 0; k < state.floats_per_vertex; k++){
-                        	if(state.interp_rules[k] == interp_type::flat){
-					in.data[k] = v0.data[k];
-				}
-				else if(state.interp_rules[k] == interp_type::noperspective){
-					in.data[k] = alpha * v0.data[k] + beta * v1.data[k] + gamma * v2.data[k];
-				}
-			}
-		
+                                if(state.interp_rules[k] == interp_type::flat){
+                                        in.data[k] = v0.data[k];
+                                }
+                                else if(state.interp_rules[k] == interp_type::noperspective){
+                                        in.data[k] = alpha * v0.data[k] + beta * v1.data[k] + gamma * v2.data[k];
+                                }
+                                else if(state.interp_rules[k] == interp_type::smooth){
+                                        float d = alpha/v0.gl_Position[3] + beta/v1.gl_Position[3] + gamma/v2.gl_Position[3];
+                                        in.data[k] = ((alpha/v0.gl_Position[3]/d)*v0.data[k]) + (beta/(d*v1.gl_Position[3])*v1.data[k]) + (gamma/(d*v2.gl_Position[3])*v2.data[k]);
+                                }
+                        }
 			state.fragment_shader(in, out, state.uniform_data);
                 	state.image_color[state.image_width * j + i] = make_pixel(out.output_color[0] * 255, out.output_color[1] * 255, out.output_color[2] * 255);
                 }
