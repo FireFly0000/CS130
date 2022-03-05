@@ -39,7 +39,6 @@ void initialize_render(driver_state& state, int width, int height)
 void render(driver_state& state, render_type type)
 {
 	data_geometry objects[3];
-	//const data_geometry* ob_addr[3];
 	data_vertex temp[3];
 
 	switch(type){
@@ -51,6 +50,44 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 					x = x+state.floats_per_vertex;					
+				}
+				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+			}
+			break;
+		}
+		case render_type::indexed:{
+			for(int i = 0; i < state.num_triangles*3; i = i+3){
+				for(int j = 0; j<3; j++){
+					temp[j].data = &state.vertex_data[state.index_data[i+j] * state.floats_per_vertex];
+					objects[j].data = temp[j].data;
+					state.vertex_shader(temp[j], objects[j], state.uniform_data);
+				}
+				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+			}
+			break;
+		}
+		case render_type::fan:{
+			for(int i = 0; i < state.num_vertices; i++){
+				for(int j = 0; j < 3; j++){
+					if(j == 0){
+						temp[j].data = &state.vertex_data[0];
+					}
+					else{
+						temp[j].data = &state.vertex_data[(i+j) * state.floats_per_vertex];
+					}
+					objects[j].data = temp[j].data;
+					state.vertex_shader(temp[j], objects[j], state.uniform_data);
+				}
+				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+			}
+			break;
+		}
+		case render_type::strip:{
+			for(int i = 0; i < state.num_vertices-2; i++){
+				for(int j = 0; j<3; j++){
+					temp[j].data = &state.vertex_data[(i+j) * state.floats_per_vertex];
+					objects[j].data = temp[j].data;
+					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
 				rasterize_triangle(state, objects[0], objects[1], objects[2]);
 			}
