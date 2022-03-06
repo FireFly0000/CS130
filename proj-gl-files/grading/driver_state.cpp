@@ -51,7 +51,7 @@ void render(driver_state& state, render_type type)
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 					x = x+state.floats_per_vertex;					
 				}
-				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -62,7 +62,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -78,7 +78,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -89,7 +89,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				rasterize_triangle(state, objects[0], objects[1], objects[2]);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -106,13 +106,288 @@ void render(driver_state& state, render_type type)
 void clip_triangle(driver_state& state, const data_geometry& v0,
     const data_geometry& v1, const data_geometry& v2,int face)
 {
-    if(face==6)
-    {
+    vec4 a = v0.gl_Position;
+    vec4 b = v1.gl_Position;
+    vec4 c = v2.gl_Position;
+    if(face==6){
         rasterize_triangle(state, v0, v1, v2);
         return;
     }
-    std::cout<<"TODO: implement clipping. (The current code passes the triangle through without clipping them.)"<<std::endl;
-    clip_triangle(state, v0, v1, v2,face+1);
+    else if(face == 0){ //right plane
+    	if(a[0] <= a[3] && b[0] <= b[3] && c[0] <= c[3]){ //all three points are inside of plane
+		clip_triangle(state, v0, v1, v2,face+1);
+	}
+	else if(a[0] > a[3] && b[0] > b[3] && c[0] > c[3]){ //all three points are outside of plane, do nothing
+		return;
+	}
+	else if( (a[0] > a[3] && b[0] <= b[3] && c[0] <= c[3]) || //two points are inside of plane
+		 (a[0] <= a[3] && b[0] > b[3] && c[0] <= c[3]) ||
+		 (a[0] <= a[3] && b[0] <= b[3] && c[0] > c[3])){
+			vec4 in1, in2, out;
+			data_geometry A, B, C;		//A and B are always the two inside, C is always the one outside
+			if(b[0] <= b[3] && c[0] <= c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+			else if(a[0] <= a[3] && c[0] <= c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+			else if(a[0] <= a[3] && b[0] <= b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+			float alpha1 = (out[3] - out[0])/(in1[0] - in1[3] + out[3] - out[0]);
+			float alpha2 = (out[3] - out[0])/(in2[0] - in2[3] + out[3] - out[0]);
+			vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+			vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+		        
+			C.gl_Position = intersect_1;
+			clip_triangle(state, A, B, C, face + 1);
+
+			A.gl_Position = intersect_2;
+			clip_triangle(state, A, B, C, face + 1);	
+		 
+	}
+	else if( (a[0] <= a[3] && b[0] > b[3] && c[0] > c[3]) || //one point is inside of plane
+		 (a[0] > a[3] && b[0] <= b[3] && c[0] > c[3]) ||
+	         (a[0] > a[3] && b[0] > b[3] && c[0] <= c[3])) {
+			vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[0] <= a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[0] <= b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[0] <= c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+			float alpha1 = (out1[3] - out1[0])/(in[0] - in[3] + out1[3] - out1[0]);
+                        float alpha2 = (out2[3] - out2[0])/(in[0] - in[3] + out2[3] - out2[0]);
+			vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+			C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+	}	 
+    }
+    else if(face == 1){ //left plane
+	if(a[0] >= -a[3] && b[0] >= -b[3] && c[0] >= -c[3]){ //all three points are inside of plane
+                clip_triangle(state, v0, v1, v2,face+1);
+        }
+        else if(a[0] < -a[3] && b[0] < -b[3] && c[0] < -c[3]){ //all three points are outside of plane, do nothing
+                return;
+        }
+        else if( (a[0] < -a[3] && b[0] >= -b[3] && c[0] >= -c[3]) || //two points are inside of plane
+                 (a[0] >= -a[3] && b[0] < -b[3] && c[0] >= -c[3]) ||
+                 (a[0] >= -a[3] && b[0] >= -b[3] && c[0] < -c[3])){
+                        vec4 in1, in2, out;
+                        data_geometry A, B, C;          //A and B are always the two inside, C is always the one outside
+                        if(b[0] >= -b[3] && c[0] >= -c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+                        else if(a[0] >= -a[3] && c[0] >= -c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+                        else if(a[0] >= -a[3] && b[0] >= -b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+                        float alpha1 = (-out[3] - out[0])/(in1[0] + in1[3] - out[3] - out[0]);
+                        float alpha2 = (-out[3] - out[0])/(in2[0] + in2[3] - out[3] - out[0]);
+                        vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+                        vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+
+                        C.gl_Position = intersect_1;
+                        clip_triangle(state, A, B, C, face + 1);
+
+                        A.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }
+        else if( (a[0] >= -a[3] && b[0] < -b[3] && c[0] < -c[3]) || //one point is inside of plane
+                 (a[0] < -a[3] && b[0] >= -b[3] && c[0] < -c[3]) ||
+                 (a[0] < -a[3] && b[0] < -b[3] && c[0] >= -c[3])) {
+                        vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[0] >= -a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[0] >= -b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[0] >= -c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+                        float alpha1 = (-out1[3] - out1[0])/(in[0] + in[3] - out1[3] - out1[0]);
+                        float alpha2 = (-out2[3] - out2[0])/(in[0] + in[3] - out2[3] - out2[0]);
+                        vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+                        C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+	}
+    }
+   else if(face == 2){ //top plane
+	if(a[1] <= a[3] && b[1] <= b[3] && c[1] <= c[3]){ //all three points are inside of plane
+                clip_triangle(state, v0, v1, v2,face+1);
+        }
+        else if(a[1] > a[3] && b[1] > b[3] && c[1] > c[3]){ //all three points are outside of plane, do nothing
+                return;
+        }
+        else if( (a[1] > a[3] && b[1] <= b[3] && c[1] <= c[3]) || //two points are inside of plane
+                 (a[1] <= a[3] && b[1] > b[3] && c[1] <= c[3]) ||
+                 (a[1] <= a[3] && b[1] <= b[3] && c[1] > c[3])){
+                        vec4 in1, in2, out;
+                        data_geometry A, B, C;          //A and B are always the two inside, C is always the one outside
+                        if(b[1] <= b[3] && c[1] <= c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+                        else if(a[1] <= a[3] && c[1] <= c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+                        else if(a[1] <= a[3] && b[1] <= b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+                        float alpha1 = (out[3] - out[1])/(in1[1] - in1[3] + out[3] - out[1]);
+                        float alpha2 = (out[3] - out[1])/(in2[1] - in2[3] + out[3] - out[1]);
+                        vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+                        vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+
+                        C.gl_Position = intersect_1;
+                        clip_triangle(state, A, B, C, face + 1);
+
+                        A.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }
+        else if( (a[1] <= a[3] && b[1] > b[3] && c[1] > c[3]) || //one point is inside of plane
+                 (a[1] > a[3] && b[1] <= b[3] && c[1] > c[3]) ||
+                 (a[1] > a[3] && b[1] > b[3] && c[1] <= c[3])) {
+                        vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[1] <= a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[1] <= b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[1] <= c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+                        float alpha1 = (out1[3] - out1[1])/(in[1] - in[3] + out1[3] - out1[1]);
+                        float alpha2 = (out2[3] - out2[1])/(in[1] - in[3] + out2[3] - out2[1]);
+                        vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+                        C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+	}
+   }
+   else if(face == 3){ //bottom plane
+	if(a[1] >= -a[3] && b[1] >= -b[3] && c[1] >= -c[3]){ //all three points are inside of plane
+                clip_triangle(state, v0, v1, v2,face+1);
+        }
+        else if(a[1] < -a[3] && b[1] < -b[3] && c[1] < -c[3]){ //all three points are outside of plane, do nothing
+                return;
+        }
+        else if( (a[1] < -a[3] && b[1] >= -b[3] && c[1] >= -c[3]) || //two points are inside of plane
+                 (a[1] >= -a[3] && b[1] < -b[3] && c[1] >= -c[3]) ||
+                 (a[1] >= -a[3] && b[1] >= -b[3] && c[1] < -c[3])){
+                        vec4 in1, in2, out;
+                        data_geometry A, B, C;          //A and B are always the two inside, C is always the one outside
+                        if(b[1] >= -b[3] && c[1] >= -c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+                        else if(a[1] >= -a[3] && c[1] >= -c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+                        else if(a[1] >= -a[3] && b[1] >= -b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+                        float alpha1 = (-out[3] - out[1])/(in1[1] + in1[3] - out[3] - out[1]);
+                        float alpha2 = (-out[3] - out[1])/(in2[1] + in2[3] - out[3] - out[1]);
+                        vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+                        vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+
+                        C.gl_Position = intersect_1;
+                        clip_triangle(state, A, B, C, face + 1);
+
+                        A.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }
+        else if( (a[1] >= -a[3] && b[1] < -b[3] && c[1] < -c[3]) || //one point is inside of plane
+                 (a[1] < -a[3] && b[1] >= -b[3] && c[1] < -c[3]) ||
+                 (a[1] < -a[3] && b[1] < -b[3] && c[1] >= -c[3])) {
+                        vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[1] >= -a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[1] >= -b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[1] >= -c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+                        float alpha1 = (-out1[3] - out1[1])/(in[1] + in[3] - out1[3] - out1[1]);
+                        float alpha2 = (-out2[3] - out2[1])/(in[1] + in[3] - out2[3] - out2[1]);
+                        vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+                        C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }	   
+   }
+   else if(face == 4){ //far plane
+   	if(a[2] <= a[3] && b[2] <= b[3] && c[2] <= c[3]){ //all three points are inside of plane
+                clip_triangle(state, v0, v1, v2,face+1);
+        }
+        else if(a[2] > a[3] && b[2] > b[3] && c[2] > c[3]){ //all three points are outside of plane, do nothing
+                return;
+        }
+        else if( (a[2] > a[3] && b[2] <= b[3] && c[2] <= c[3]) || //two points are inside of plane
+                 (a[2] <= a[3] && b[2] > b[3] && c[2] <= c[3]) ||
+                 (a[2] <= a[3] && b[2] <= b[3] && c[2] > c[3])){
+                        vec4 in1, in2, out;
+                        data_geometry A, B, C;          //A and B are always the two inside, C is always the one outside
+                        if(b[2] <= b[3] && c[2] <= c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+                        else if(a[2] <= a[3] && c[2] <= c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+                        else if(a[2] <= a[3] && b[2] <= b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+                        float alpha1 = (out[3] - out[2])/(in1[2] - in1[3] + out[3] - out[2]);
+                        float alpha2 = (out[3] - out[2])/(in2[2] - in2[3] + out[3] - out[2]);
+                        vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+                        vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+
+                        C.gl_Position = intersect_1;
+                        clip_triangle(state, A, B, C, face + 1);
+
+                        A.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }
+        else if( (a[2] <= a[3] && b[2] > b[3] && c[2] > c[3]) || //one point is inside of plane
+                 (a[2] > a[3] && b[2] <= b[3] && c[2] > c[3]) ||
+                 (a[2] > a[3] && b[2] > b[3] && c[2] <= c[3])) {
+                        vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[2] <= a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[2] <= b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[2] <= c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+                        float alpha1 = (out1[3] - out1[2])/(in[2] - in[3] + out1[3] - out1[2]);
+                        float alpha2 = (out2[3] - out2[2])/(in[2] - in[3] + out2[3] - out2[2]);
+                        vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+                        C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }	
+   }
+   else if(face == 5){ //near plane
+   	if(a[2] >= -a[3] && b[2] >= -b[3] && c[2] >= -c[3]){ //all three points are inside of plane
+                clip_triangle(state, v0, v1, v2,face+1);
+        }
+        else if(a[2] < -a[3] && b[2] < -b[3] && c[2] < -c[3]){ //all three points are outside of plane, do nothing
+                return;
+        }
+        else if( (a[2] < -a[3] && b[2] >= -b[3] && c[2] >= -c[3]) || //two points are inside of plane
+                 (a[2] >= -a[3] && b[2] < -b[3] && c[2] >= -c[3]) ||
+                 (a[2] >= -a[3] && b[2] >= -b[3] && c[2] < -c[3])){
+                        vec4 in1, in2, out;
+                        data_geometry A, B, C;          //A and B are always the two inside, C is always the one outside
+                        if(b[2] >= -b[3] && c[2] >= -c[3]){ in1 = b; in2 = c; out = a; A = v1; B = v2; C = v0;}
+                        else if(a[2] >= -a[3] && c[2] >= -c[3]){ in1 = a; in2 = c; out = b; A = v0; B = v2; C = v1;}
+                        else if(a[2] >= -a[3] && b[2] >= -b[3]){ in1 = a; in2 = b; out = c; A = v0; B = v1; C = v2;}
+                        float alpha1 = (-out[3] - out[2])/(in1[2] + in1[3] - out[3] - out[2]);
+                        float alpha2 = (-out[3] - out[2])/(in2[2] + in2[3] - out[3] - out[2]);
+                        vec4 intersect_1 = alpha1*in1 +(1-alpha1)*out;
+                        vec4 intersect_2 = alpha2*in2 +(1-alpha2)*out;
+
+                        C.gl_Position = intersect_1;
+                        clip_triangle(state, A, B, C, face + 1);
+
+                        A.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }
+        else if( (a[2] >= -a[3] && b[2] < -b[3] && c[2] < -c[3]) || //one point is inside of plane
+                 (a[2] < -a[3] && b[2] >= -b[3] && c[2] < -c[3]) ||
+                 (a[2] < -a[3] && b[2] < -b[3] && c[2] >= -c[3])) {
+                        vec4 in, out1, out2;
+                        data_geometry A, B, C;            //A is always the one inside, B and C are always the one outside
+                        if(a[2] >= -a[3]){ in = a; out1 = b; out2 = c; A = v0; B = v1; C = v2;}
+                        else if(b[2] >= -b[3]){ in = b; out1 = a; out2 = c; A = v1; B = v0; C = v2;}
+                        else if(c[2] >= -c[3]){ in = c; out1 = a; out2 = b; A = v2; B = v0; C = v1;}
+                        float alpha1 = (-out1[3] - out1[2])/(in[2] + in[3] - out1[3] - out1[2]);
+                        float alpha2 = (-out2[3] - out2[2])/(in[2] + in[3] - out2[3] - out2[2]);
+                        vec4 intersect_1 = alpha1*in +(1-alpha1)*out1;
+                        vec4 intersect_2 = alpha2*in +(1-alpha2)*out2;
+
+                        B.gl_Position = intersect_1;
+                        C.gl_Position = intersect_2;
+                        clip_triangle(state, A, B, C, face + 1);
+
+        }				
+   } 
 }
 
 // Rasterize the triangle defined by the three vertices in the "in" array.  This
