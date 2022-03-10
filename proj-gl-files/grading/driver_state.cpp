@@ -51,7 +51,7 @@ void render(driver_state& state, render_type type)
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 					x = x+state.floats_per_vertex;					
 				}
-				clip_triangle(state, objects[0], objects[1], objects[2], 5);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -62,7 +62,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				clip_triangle(state, objects[0], objects[1], objects[2], 5);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -78,7 +78,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				clip_triangle(state, objects[0], objects[1], objects[2], 5);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
@@ -89,7 +89,7 @@ void render(driver_state& state, render_type type)
 					objects[j].data = temp[j].data;
 					state.vertex_shader(temp[j], objects[j], state.uniform_data);
 				}
-				clip_triangle(state, objects[0], objects[1], objects[2], 5);
+				clip_triangle(state, objects[0], objects[1], objects[2], 4);
 			}
 			break;
 		}
